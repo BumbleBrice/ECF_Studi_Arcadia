@@ -1,0 +1,33 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Liste des services{% endblock %}
+
+{% block content %}
+<style>
+    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
+    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
+</style>
+
+<div class="text-center m-4">
+    <h1>Les activités d'Arcadia</h1>
+
+    <div class="container">
+        <div class="row">
+        {% for service in services %}
+            <div class="col-12 col-md-6 col-lg-4 p-3">
+                <div class="card">
+                    <img src="{{ asset('uploads/services/' ~ service.image) }}"class="card-img-top" alt="...">
+                        <div class="card-body">
+                            <h4 class="mb-1">{{ service.nom }}</h4>
+                            <a href="{{ path('app_admin_service_show', {id: service.id}) }}" class="btn bg_primary text-white m-2">En savoir plus</a>
+                        </div>
+                </div>
+            </div>
+                {% else %}
+                <p>Aucun enregistrement en base de données.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,96 @@
+<?php
+
+namespace App\Controller\Admin;
+
+use App\Entity\Service;
+use App\Form\ServiceType;
+use App\Repository\ServiceRepository;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
+
+#[Route('/admin/service')]
+#[IsGranted('ROLE_ADMIN')]
+class ServiceController extends AbstractController
+{
+    #[Route('', name: 'app_admin_service_index', methods: ['GET'])]
+    public function index(ServiceRepository $repository): Response
+    {
+        $services = $repository->findAll();
+
+        return $this->render('admin_service/index.html.twig', [
+            'controller_name' => 'ServiceController',
+            'services' => $services,
+        ]);
+    }
+
+    #[Route('/new', name: 'app_admin_service_new', methods: ['GET', 'POST'])]
+    #[IsGranted('ROLE_ADMIN')]
+    public function new(Request $request, EntityManagerInterface $manager): Response
+    {
+        $service = new Service();
+        $form = $this->createForm(ServiceType::class, $service);
+
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            /** @var UploadedFile|null $file */
+        $file = $form->get('image')->getData();
+
+        if ($file) {
+            $filename = md5(uniqid()) . '.' . $file->guessExtension();
+
+            try {
+                $file->move(
+                    $this->getParameter('kernel.project_dir') . '/assets/uploads/services',
+                    $filename
+                );
+                $service->setImage($filename);
+            } catch (FileException $e) {
+                $this->addFlash('error', 'Erreur lors du téléchargement de l\'image.');
+                return $this->render('admin_service/new.html.twig', [
+                    'form' => $form->createView(),
+                ]);
+            }
+        }
+
+        $manager->persist($service);
+        $manager->flush();
+
+        return $this->redirectToRoute('app_admin_service_show', ['id' => $service->getId()]);
+        }
+
+        return $this->render('admin_service/new.html.twig', [
+            'form' => $form->createView(),
+        ]);
+    }
+
+    #[Route('/{id}/edit', name: 'app_admin_service_edit', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
+    #[IsGranted('ROLE_ADMIN')]
+    public function edit(Service $service, Request $request, EntityManagerInterface $manager): Response
+    {
+        $form = $this->createForm(ServiceType::class, $service);
+
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            $manager->persist($service);
+            $manager->flush();
+
+            return $this->redirectToRoute('app_admin_service_show', ['id' => $service->getId()]);
+        }
+
+        return $this->render('admin_service/edit.html.twig', [
+            'form' => $form,
+        ]);
+    }
+
+    #[Route('/{id}', name: 'app_admin_service_show', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function show(Service $service): Response
+    {
+        return $this->render('admin_service/show.html.twig', [
+            'service' => $service,
+        ]);
+    }
+}
